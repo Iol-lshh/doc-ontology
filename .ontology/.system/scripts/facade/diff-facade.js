@@ -6,6 +6,7 @@
 
 const { load } = require('../config.js');
 const snapshotService = require('../service/snapshot-service.js');
+const diffService = require('../service/diff-service.js');
 
 // 그래프 diff — 두 graphIndex의 노드·엣지를 비교(노드는 id 기준, 엣지는 from|rel|to 기준).
 function graphDiff(a, b) {
@@ -40,7 +41,19 @@ function diff(from, to) {
 
   // 그래프 diff (먼저 보임) + 파일 diff (드릴다운), ADR 0012
   const graph = graphDiff(snapshotService.graphOf(sys, treeA), snapshotService.graphOf(sys, treeB));
-  const files = snapshotService.fileDiff(sys, treeA, treeB);
+  const fileChanges = snapshotService.fileDiff(sys, treeA, treeB);
+
+  // 변경 파일마다 양쪽 본문 줄 diff를 붙인다(좌=A, 우=B). 추가/삭제는 한쪽만.
+  const lineDiffOf = (path, hasA, hasB) =>
+    diffService.lineDiff(
+      hasA ? snapshotService.blobAt(sys, treeA, path) : '',
+      hasB ? snapshotService.blobAt(sys, treeB, path) : ''
+    );
+  const files = {
+    added: fileChanges.added.map((path) => ({ path, lines: lineDiffOf(path, false, true) })),
+    removed: fileChanges.removed.map((path) => ({ path, lines: lineDiffOf(path, true, false) })),
+    modified: fileChanges.modified.map((path) => ({ path, lines: lineDiffOf(path, true, true) })),
+  };
 
   return { ok: true, from, to, graph, files };
 }

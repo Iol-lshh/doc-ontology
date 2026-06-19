@@ -47,3 +47,11 @@ main { padding:16px; }
 .d-add { color:#3fb950; }
 .d-del { color:#f85149; }
 .d-mod { color:#d29922; }
+.dfile { margin:4px 0; }
+.dfile summary { cursor:pointer; font-family:ui-monospace,monospace; font-size:12px; padding:4px 0; }
+.dsplit { font-family:ui-monospace,monospace; font-size:12px; border:1px solid var(--line); border-radius:6px; overflow-x:auto; margin-top:4px; }
+.drow { display:grid; grid-template-columns:1fr 1fr; }
+.dl { padding:1px 8px; white-space:pre; border-right:1px solid var(--line); min-height:18px; }
+.dl.empty { background:#15171c; }
+.drow .d-del { background:rgba(248,81,73,0.12); }
+.drow .d-add { background:rgba(63,185,80,0.12); }

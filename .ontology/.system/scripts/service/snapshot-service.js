@@ -59,6 +59,19 @@ function fileDiff(systemDbDir, treeA, treeB) {
   return os.diffTrees(historyPath(systemDbDir), treeA, treeB);
 }
 
+// tree에서 relPath('a/b.md')를 따라가 blob 본문(텍스트)을 읽는다. 없으면 빈 문자열.
+function blobAt(systemDbDir, treeSha, relPath) {
+  const historyDir = historyPath(systemDbDir);
+  const parts = relPath.split('/');
+  let sha = treeSha;
+  for (let k = 0; k < parts.length; k++) {
+    const entry = os.parseTree(os.readObject(historyDir, sha).payload).find((e) => e.name === parts[k]);
+    if (!entry) return '';
+    sha = entry.sha;
+  }
+  return os.readObject(historyDir, sha).payload.toString('utf8');
+}
+
 // tree에서 index/graphIndex.json blob을 찾아 파싱해 돌려준다(없으면 null).
 function graphOf(systemDbDir, treeSha) {
   const historyDir = historyPath(systemDbDir);
@@ -180,6 +193,7 @@ module.exports = {
   treeOf,
   graphOf,
   fileDiff,
+  blobAt,
   captureBackup,
   hasBackup,
   restoreBackup,

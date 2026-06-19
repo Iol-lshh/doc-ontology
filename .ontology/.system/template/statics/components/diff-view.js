@@ -69,13 +69,23 @@ class DiffView extends HTMLElement {
 
     const f = d.files;
     if (f.added.length + f.removed.length + f.modified.length) {
-      html += '<h3>파일</h3><div class="edge-list">';
-      f.added.forEach((p) => (html += `<div class="d-add">+ ${esc(p)}</div>`));
-      f.removed.forEach((p) => (html += `<div class="d-del">− ${esc(p)}</div>`));
-      f.modified.forEach((p) => (html += `<div class="d-mod">~ ${esc(p)}</div>`));
-      html += '</div>';
+      html += '<h3>파일</h3>';
+      f.modified.forEach((file) => (html += this.fileBlock('~', 'mod', file)));
+      f.added.forEach((file) => (html += this.fileBlock('+', 'add', file)));
+      f.removed.forEach((file) => (html += this.fileBlock('−', 'del', file)));
     }
     return html;
+  }
+
+  // 파일 하나 — 펼치면 좌(이전)/우(이후) split. keep은 양쪽, del은 좌만, add는 우만.
+  fileBlock(sign, cls, file) {
+    let rows = '';
+    for (const l of file.lines) {
+      const left = l.op !== 'add' ? `<div class="dl ${l.op === 'del' ? 'd-del' : ''}">${esc(l.text)}</div>` : '<div class="dl empty"></div>';
+      const right = l.op !== 'del' ? `<div class="dl ${l.op === 'add' ? 'd-add' : ''}">${esc(l.text)}</div>` : '<div class="dl empty"></div>';
+      rows += `<div class="drow">${left}${right}</div>`;
+    }
+    return `<details class="dfile"><summary class="d-${cls}">${sign} ${esc(file.path)}</summary><div class="dsplit">${rows}</div></details>`;
   }
 }
 

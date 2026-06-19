@@ -49,6 +49,7 @@ main { padding:16px; }
 .d-mod { color:#d29922; }
 .dfile { margin:4px 0; }
 .dfile summary { cursor:pointer; font-family:ui-monospace,monospace; font-size:12px; padding:4px 0; }
+.dpath { color:var(--muted); font-size:10px; margin-left:6px; }
 .dsplit { font-family:ui-monospace,monospace; font-size:12px; border:1px solid var(--line); border-radius:6px; overflow-x:auto; margin-top:4px; }
 .drow { display:grid; grid-template-columns:1fr 1fr; }
 .dl { padding:1px 8px; white-space:pre; border-right:1px solid var(--line); min-height:18px; }

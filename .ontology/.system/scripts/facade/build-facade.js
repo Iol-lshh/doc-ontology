@@ -14,11 +14,7 @@ const indexService = require('../service/index-service.js');
 const verifyService = require('../service/verify-service.js');
 const snapshotService = require('../service/snapshot-service.js');
 
-const TYPE_DIR = { Concept: 'concept', Class: 'class', Instance: 'instance' };
-
-function writeJson(file, obj) {
-  fs.writeFileSync(file, JSON.stringify(obj, null, 2) + '\n');
-}
+const CONTENT_DIRS = ['index', 'concept', 'class', 'instance'];
 
 // 새로 발급된 id를 database/ 원본 .md의 frontmatter에 되쓴다(ADR 0006 예외).
 // 기존 frontmatter는 보존하고 id 줄만 추가한다. Class는 폴더라 대상이 아니다(.md 노드만).
@@ -36,16 +32,36 @@ function writebackId(dbDir, node) {
   }
 }
 
-// 정규화 노드 1벌 — 빌드가 채운 frontmatter(id·type·label·관계 id)를 .system에 박는다(ADR 0008).
-function normalizedFrontmatter(node, indexes) {
-  const lines = ['---', `id: ${node.id}`, `type: ${node.type}`, `label: ${JSON.stringify(node.label)}`];
-  const out = indexes.graphIndex.edges.filter((e) => e.from === node.id);
-  if (out.length) {
-    lines.push('edges:');
-    for (const e of out) lines.push(`  - { rel: ${e.rel}, to: ${e.to} }`);
+// 정규화 맵(경로→내용)을 .system에 쓴다. 콘텐츠 디렉터리를 비우고 다시 쓴다(여벌이라 재생성 가능).
+function writeNormalized(systemDb, fileMap) {
+  for (const dir of CONTENT_DIRS) {
+    fs.rmSync(path.join(systemDb, dir), { recursive: true, force: true });
   }
-  lines.push('---');
-  return lines.join('\n') + '\n';
+  for (const [rel, content] of Object.entries(fileMap)) {
+    const file = path.join(systemDb, rel);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, content);
+  }
+}
+
+// scan→id→index→verify 공통 사슬. build와 virtualBuild가 공유한다.
+function runChain(dbDir) {
+  const scanned = scanService.scan(dbDir);
+  const nodes = idService.assignIds(scanned);
+  const indexes = indexService.build(nodes);
+  const result = verifyService.verify(nodes, indexes);
+  return { nodes, indexes, result };
+}
+
+// 가상 빌드 — database/를 scan→정규화까지 돌려 git tree만 뜬다. .system·HEAD 불변, 원본 되쓰기 없음.
+// diff의 'current'가 이걸 써 "빌드 전 사람 입력의 현재 상태"를 정규화 구조로 본다(ADR 0012).
+function virtualBuild() {
+  const cfg = load();
+  const { nodes, indexes, result } = runChain(cfg.databaseDir);
+  if (!result.ok) return { ok: false, errors: result.errors };
+  const fileMap = indexService.normalize(nodes, indexes);
+  const tree = snapshotService.treeFromFileMap(cfg.systemDbDir, fileMap);
+  return { ok: true, tree };
 }
 
 function build() {
@@ -54,10 +70,7 @@ function build() {
   const systemDb = cfg.systemDbDir; // 빌드 산출물(config로 조정 가능)
 
   // ── 조율 사슬 ──
-  const scanned = scanService.scan(dbDir);
-  const nodes = idService.assignIds(scanned);
-  const indexes = indexService.build(nodes);
-  const result = verifyService.verify(nodes, indexes);
+  const { nodes, indexes, result } = runChain(dbDir);
 
   if (!result.ok) {
     // 검증 실패 — .system 갱신하지 않음(ADR 0008). 깨진 상태 안 남김.
@@ -69,51 +82,16 @@ function build() {
   const writtenBack = nodes.filter((n) => n.freshId && n.type !== 'Class');
   for (const node of writtenBack) writebackId(dbDir, node);
 
-  // ── 통과 시에만 기록 ──
-  // 덮어쓰기 직전, 기존 콘텐츠를 backup(1세대)으로 보관한다 — 빌드 롤백 대상(ADR 0010).
-  // 첫 빌드(기존 콘텐츠 없음)면 backup은 빈 채로 만들어지며, 그 경우 빌드 롤백은 빈 상태로 복구된다.
+  // ── 통과 시 작업본 갱신 (history·backup은 안 건드림 — 그건 save의 일, ADR 0008) ──
   fs.mkdirSync(systemDb, { recursive: true });
-  snapshotService.captureBackup(systemDb);
-
-  const indexDir = path.join(systemDb, 'index');
-  fs.mkdirSync(indexDir, { recursive: true });
-  writeJson(path.join(indexDir, 'fileIndex.json'), indexes.fileIndex);
-  writeJson(path.join(indexDir, 'graphIndex.json'), indexes.graphIndex);
-  writeJson(path.join(indexDir, 'labelIndex.json'), indexes.labelIndex);
-
-  // 정규화 노드 1벌 — 기존 것을 지우고 다시 쓴다(여벌이므로 재생성 가능).
-  for (const dir of Object.values(TYPE_DIR)) {
-    fs.rmSync(path.join(systemDb, dir), { recursive: true, force: true });
-    fs.mkdirSync(path.join(systemDb, dir), { recursive: true });
-  }
-  for (const node of nodes) {
-    const dir = path.join(systemDb, TYPE_DIR[node.type]);
-    const body = node.body ? `\n${node.body}\n` : '';
-    fs.writeFileSync(path.join(dir, `${node.id}.md`), normalizedFrontmatter(node, indexes) + body);
-  }
-
-  // 스냅샷 적재 — git 객체 모델로 세대(commit)를 만든다(ADR 0014). 직전과 그래프가 같으면 새 세대 안 생김.
-  // history.enabled off면 건너뛴다. 빌드 롤백(여벌)은 이와 무관하게 항상 가능(ADR 0008).
-  let generation = null;
-  let unchanged = false;
-  if (cfg.history.enabled) {
-    const now = new Date();
-    const tsSec = Math.floor(now.getTime() / 1000);
-    const off = -now.getTimezoneOffset(); // 분, 동쪽이 +
-    const tz = `${off >= 0 ? '+' : '-'}${String(Math.floor(Math.abs(off) / 60)).padStart(2, '0')}${String(Math.abs(off) % 60).padStart(2, '0')}`;
-    const result = snapshotService.capture(systemDb, tsSec, tz);
-    generation = result.generation;
-    unchanged = result.unchanged;
-  }
+  writeNormalized(systemDb, indexService.normalize(nodes, indexes));
 
   return {
     ok: true,
     nodeCount: nodes.length,
     edgeCount: indexes.graphIndex.edges.length,
-    generation,
-    unchanged,
     idsWritten: writtenBack.length,
   };
 }
 
-module.exports = { build };
+module.exports = { build, virtualBuild };

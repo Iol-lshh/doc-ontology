@@ -78,6 +78,7 @@ class DiffView extends HTMLElement {
   }
 
   // 파일 하나 — 펼치면 좌(이전)/우(이후) split. keep은 양쪽, del은 좌만, add는 우만.
+  // 사람이 아는 이름(label·type)을 주로 보이고 id 경로는 부차로(ADR 0006).
   fileBlock(sign, cls, file) {
     let rows = '';
     for (const l of file.lines) {
@@ -85,7 +86,10 @@ class DiffView extends HTMLElement {
       const right = l.op !== 'del' ? `<div class="dl ${l.op === 'add' ? 'd-add' : ''}">${esc(l.text)}</div>` : '<div class="dl empty"></div>';
       rows += `<div class="drow">${left}${right}</div>`;
     }
-    return `<details class="dfile"><summary class="d-${cls}">${sign} ${esc(file.path)}</summary><div class="dsplit">${rows}</div></details>`;
+    const title = file.label
+      ? `${badge(file.type)}${esc(file.label)} <span class="dpath">${esc(file.path)}</span>`
+      : esc(file.path);
+    return `<details class="dfile"><summary class="d-${cls}">${sign} ${title}</summary><div class="dsplit">${rows}</div></details>`;
   }
 }
 

@@ -10,7 +10,8 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { load } = require('./config.js');
 const buildFacade = require('./facade/build-facade.js');
-const rollbackFacade = require('./facade/rollback-facade.js');
+const saveFacade = require('./facade/save-facade.js');
+const revertFacade = require('./facade/revert-facade.js');
 const findFilePathFacade = require('./facade/find-file-path-facade.js');
 const findGraphFacade = require('./facade/find-graph-facade.js');
 const findDocumentFacade = require('./facade/find-document-facade.js');
@@ -121,10 +122,13 @@ function startServer(port, heartbeatTimeoutMs) {
       return;
     }
 
-    // rollback — generation 쿼리 있으면 히스토리 롤백, 없으면 빌드 롤백(ADR 0010).
-    if (method === 'POST' && url === '/rollback') {
-      const generation = parsed.searchParams.get('generation');
-      const result = generation ? rollbackFacade.historyRollback(generation) : rollbackFacade.buildRollback();
+    if (method === 'POST' && url === '/save') {
+      return json(res, 200, saveFacade.save());
+    }
+
+    // revert — 작업본을 generation 세대로 되돌림(저장 안 함, backup·히스토리 불변, ADR 0010).
+    if (method === 'POST' && url === '/revert') {
+      const result = revertFacade.revert(parsed.searchParams.get('generation'));
       return json(res, result.ok ? 200 : 422, result);
     }
 

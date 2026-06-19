@@ -11,7 +11,7 @@
 | [0005](0005-path-determines-type.md) | 경로가 type 결정 | 디렉터리 깊이로 Concept/Class/Instance 자동 판정 |
 | [0006](0006-label-source-id-index.md) | 원본 label / 인덱스 id | 사람은 label, 빌드가 id로 변환 + 역방향 edge 자동 |
 | [0007](0007-three-indexes.md) | 인덱스 3종 | fileIndex(id→경로) / graphIndex(관계) / labelIndex(label→id) |
-| [0008](0008-build-on-verify-only.md) | 검증 통과 시에만 갱신 | 빌드는 verify 통과 시만 `.system` 기록 + 스냅샷 적재, 깨진 상태는 안 남김 |
+| [0008](0008-build-on-verify-only.md) | 빌드/저장 분리, 검증 통과 시만 | build=작업본 갱신(verify 통과 시), save=세대 적재+backup. git working tree↔commit |
 | [0009](0009-config-yml.md) | 설정을 config.yml로 | `.ontology/config.yml`(사람 영역)에 정책 — 입력 경로, 히스토리 on/off |
 | [0010](0010-snapshot-history.md) | 스냅샷 이력 통합 | 빌드 통과 스냅샷으로 복원·버전 이력 통합. 무제한 보존, 빌드/히스토리 롤백 분리 |
 | [0011](0011-symmetric-frontends.md) | GUI/CLI 대칭 프론트엔드 | 진입 비대칭·엔진 대칭. Cli/Gui Controller가 동일 Facade 호출, 하트비트 서버 |

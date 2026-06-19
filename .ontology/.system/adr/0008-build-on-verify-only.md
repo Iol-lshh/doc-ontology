@@ -9,12 +9,19 @@
 
 ## Decision
 
-엔진 유스케이스의 중심은 **build-ontology(빌드)**와 **find(찾기)**다([[0010]] rollback, [[0012]] diff가 더해진다). 각 유스케이스는 Facade가 조율하고 명령 로직은 Controller 밖에만 있다([[0011]]·[[0013]]). 빌드는 검증을 통과했을 때만 `.system`을 갱신한다.
+**빌드와 저장을 나눈다**(git의 working tree ↔ commit). 빌드는 자주·가볍게, 저장은 의식적으로 한다.
 
-- `database/` 스캔 → 자동 채움 → 관계 해소·검증.
-- 검증 실패 시 인덱스·여벌(`.system/database/`)을 **갱신하지 않는다**. 깨진 상태는 남기지 않는다.
-- 통과 시에만 정규화 노드(`.system/database/{concept,class,instance}/<id>.md`)와 인덱스 3종을 기록하고, 그 시점 스냅샷을 이력에 적재한다([[0010]]).
-- `.system/database/`는 마지막으로 통과한 온톨로지의 여벌(복원본)이 된다.
+- **build-ontology** — `database/` 스캔 → 자동 채움 → 관계 해소·검증 → 통과 시 `.system/database`(작업본)를 갱신. **history·backup은 건드리지 않는다.**
+- **save** — 현재 작업본을 영구 보존: 직전 저장본을 backup으로 밀어내고([[0010]]), 작업본을 새 세대로 적재한다([[0010]]·[[0014]]). 그래프가 직전 저장과 같으면 새 세대를 만들지 않는다([[0014]]).
+- **find**([[0007]]) / **rollback**([[0010]]) / **diff**([[0012]]) — 조회·복원·비교.
+
+빌드는 검증을 통과했을 때만 작업본을 갱신한다.
+
+- 검증 실패 시 작업본(`.system/database/`)을 **갱신하지 않는다**. 깨진 상태는 남기지 않는다.
+- 통과 시 정규화 노드(`.system/database/{concept,class,instance}/<id>.md`)와 인덱스 3종을 기록한다(작업본).
+- `.system/database/`(작업본)는 마지막으로 통과한 온톨로지다. 영구 보존은 save가 한다.
+
+build와 save가 갈리므로 시점이 명확하다 — diff의 `current`(작업본, [[0012]])는 build 결과, `backup`은 마지막 save 직전 저장본이다. build만 반복해도 세대·backup은 불변이다.
 
 ## Consequences
 

@@ -34,8 +34,30 @@ function captureTree(systemDbDir, historyDir, dir) {
   return os.writeTree(historyDir, entries);
 }
 
+// 경로→내용 맵({'index/x.json': '...', 'concept/<id>.md': '...'})을 git tree로 만든다.
+// 가상 빌드(diff의 current)가 .system에 안 쓰고 tree만 뜰 때 쓴다. blob은 객체로 쓰되 HEAD 불변.
+function treeFromFileMap(systemDbDir, fileMap) {
+  const historyDir = historyPath(systemDbDir);
+  // 경로를 디렉터리 트리로 모은다: { dirName: {...}, fileName: blobSha }
+  const root = {};
+  for (const [rel, content] of Object.entries(fileMap)) {
+    const parts = rel.split('/');
+    let cur = root;
+    for (let k = 0; k < parts.length - 1; k++) cur = cur[parts[k]] ||= {};
+    cur[parts[parts.length - 1]] = os.writeBlob(historyDir, Buffer.from(content));
+  }
+  const build = (node) => {
+    const entries = [];
+    for (const [name, val] of Object.entries(node)) {
+      if (typeof val === 'string') entries.push({ mode: os.FILE_MODE, name, sha: val });
+      else entries.push({ mode: os.DIR_MODE, name, sha: build(val) });
+    }
+    return os.writeTree(historyDir, entries);
+  };
+  return build(root);
+}
+
 // 현재 .system 콘텐츠의 tree sha. 객체는 쓰되(같은 내용이면 blob 공유) HEAD는 안 옮긴다.
-// diff의 '세대↔현재' 비교에서 현재 쪽 tree로 쓴다(읽기 의미, 세대는 안 늘림).
 function currentTree(systemDbDir) {
   return captureTree(systemDbDir, historyPath(systemDbDir), systemDbDir);
 }
@@ -167,22 +189,11 @@ function copyContent(src, dest) {
   }
 }
 
+// save가 호출 — 현재 작업본을 backup(안전망, 마지막 저장)으로 보관. revert는 이걸 안 건드린다.
 function captureBackup(systemDbDir) {
   const dest = path.join(systemDbDir, BACKUP_DIR);
   fs.rmSync(dest, { recursive: true, force: true });
   copyContent(systemDbDir, dest);
-}
-
-function hasBackup(systemDbDir) {
-  return fs.existsSync(path.join(systemDbDir, BACKUP_DIR));
-}
-
-function restoreBackup(systemDbDir) {
-  const src = path.join(systemDbDir, BACKUP_DIR);
-  if (!fs.existsSync(src)) return false;
-  clearContent(systemDbDir);
-  copyContent(src, systemDbDir);
-  return true;
 }
 
 module.exports = {
@@ -190,13 +201,12 @@ module.exports = {
   list,
   restoreGeneration,
   currentTree,
+  treeFromFileMap,
   treeOf,
   graphOf,
   fileDiff,
   blobAt,
   captureBackup,
-  hasBackup,
-  restoreBackup,
   HISTORY_DIR,
   BACKUP_DIR,
 };

@@ -65,6 +65,35 @@ function build(nodes) {
   return { fileIndex, graphIndex, labelIndex, unresolved };
 }
 
+const TYPE_DIR = { Concept: 'concept', Class: 'class', Instance: 'instance' };
+
+// 정규화 노드 1벌의 frontmatter — 빌드가 채운 id·type·label·관계 id(ADR 0008).
+function normalizedFrontmatter(node, indexes) {
+  const lines = ['---', `id: ${node.id}`, `type: ${node.type}`, `label: ${JSON.stringify(node.label)}`];
+  const out = indexes.graphIndex.edges.filter((e) => e.from === node.id);
+  if (out.length) {
+    lines.push('edges:');
+    for (const e of out) lines.push(`  - { rel: ${e.rel}, to: ${e.to} }`);
+  }
+  lines.push('---');
+  return lines.join('\n') + '\n';
+}
+
+// 산출물을 경로→내용 맵으로 만든다(인덱스 3종 + 정규화 노드). 파일시스템·git과 무관한 순수 함수.
+// BuildFacade는 이 맵을 .system에 쓰고, 가상 빌드는 tree로 뜬다(중복 제거, ADR 0013).
+function normalize(nodes, indexes) {
+  const out = {};
+  const json = (o) => JSON.stringify(o, null, 2) + '\n';
+  out['index/fileIndex.json'] = json(indexes.fileIndex);
+  out['index/graphIndex.json'] = json(indexes.graphIndex);
+  out['index/labelIndex.json'] = json(indexes.labelIndex);
+  for (const node of nodes) {
+    const body = node.body ? `\n${node.body}\n` : '';
+    out[`${TYPE_DIR[node.type]}/${node.id}.md`] = normalizedFrontmatter(node, indexes) + body;
+  }
+  return out;
+}
+
 // 기록된 인덱스 3종을 읽는다. systemDbDir는 config가 resolve한 산출물 경로.
 function read(systemDbDir) {
   const indexDir = path.join(systemDbDir, 'index');
@@ -81,4 +110,4 @@ function read(systemDbDir) {
   };
 }
 
-module.exports = { build, read, REVERSE };
+module.exports = { build, normalize, read, TYPE_DIR, REVERSE };

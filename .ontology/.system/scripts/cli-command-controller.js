@@ -5,31 +5,39 @@
 // 명령 로직은 갖지 않는다 — Facade로 위임한다.
 
 const buildFacade = require('./facade/build-facade.js');
-const rollbackFacade = require('./facade/rollback-facade.js');
+const saveFacade = require('./facade/save-facade.js');
+const revertFacade = require('./facade/revert-facade.js');
 const diffFacade = require('./facade/diff-facade.js');
 
-const COMMANDS = ['build-ontology', 'rollback', 'find', 'diff'];
+const COMMANDS = ['build-ontology', 'save', 'revert', 'find', 'diff'];
 
 function runBuild() {
   const result = buildFacade.build();
   if (result.ok) {
-    console.log(`빌드 성공 — 노드 ${result.nodeCount}, 엣지 ${result.edgeCount}`);
+    console.log(`빌드 성공 — 노드 ${result.nodeCount}, 엣지 ${result.edgeCount} (작업본 갱신, save로 보존)`);
     process.exit(0);
   }
-  console.error(`빌드 실패 — 검증 ${result.errors.length}건 (인덱스 미갱신, ADR 0008)`);
+  console.error(`빌드 실패 — 검증 ${result.errors.length}건 (작업본 미갱신, ADR 0008)`);
   for (const e of result.errors) console.error(`  - ${e}`);
   process.exit(1);
 }
 
-// rollback [세대] — 인자 없으면 빌드 롤백(직전 여벌), 있으면 히스토리 롤백(해당 세대).
-function runRollback(generation) {
-  const result = generation ? rollbackFacade.historyRollback(generation) : rollbackFacade.buildRollback();
+// save — 현재 작업본을 보존(세대 적재 + 직전 저장본을 backup으로).
+function runSave() {
+  const result = saveFacade.save();
+  if (result.unchanged) console.log('저장 — 직전 세대와 동일, 새 세대 없음');
+  else console.log(`저장 성공 — 세대 ${result.generation ? result.generation.slice(0, 12) : '(history off)'}`);
+  process.exit(0);
+}
+
+// revert <세대> — 작업본을 그 세대로 되돌림(저장 안 함, backup·히스토리 불변).
+function runRevert(generation) {
+  const result = revertFacade.revert(generation);
   if (result.ok) {
-    const what = result.kind === 'history' ? `세대 ${result.generation}` : '직전 여벌';
-    console.log(`롤백 성공 — ${what}로 복구`);
+    console.log(`되돌림 — 작업본을 세대 ${result.generation.slice(0, 12)}로 (저장하려면 save)`);
     process.exit(0);
   }
-  console.error(`롤백 실패 — ${result.error}`);
+  console.error(`revert 실패 — ${result.error}`);
   process.exit(1);
 }
 
@@ -61,7 +69,8 @@ function main() {
   }
 
   if (command === 'build-ontology') return runBuild();
-  if (command === 'rollback') return runRollback(arg);
+  if (command === 'save') return runSave();
+  if (command === 'revert') return runRevert(arg);
   if (command === 'diff') return runDiff(arg, arg2);
 
   // find는 해당 Facade 연결 예정.

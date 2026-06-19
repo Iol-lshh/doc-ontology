@@ -1,5 +1,5 @@
 ---
-id: 019edfc2-d75f-7fff-9480-cd73d7540def
+id: 019edfc9-9758-7398-8157-e1c9f43c4d0d
 ---
 # 산출물 온톨로지
 
@@ -8,4 +8,3 @@ id: 019edfc2-d75f-7fff-9480-cd73d7540def
 
 사람은 `database/`에 노드를 두고 label로 관계만 쓴다. 빌드(build-ontology)가 경로로 type을 정하고
 label을 id로 해소해 인덱스 3종(file·graph·label)을 만든다. GUI/CLI는 이 인덱스를 대칭으로 조회한다.
-와우

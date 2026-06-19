@@ -15,6 +15,7 @@ const findFilePathFacade = require('./facade/find-file-path-facade.js');
 const findGraphFacade = require('./facade/find-graph-facade.js');
 const findDocumentFacade = require('./facade/find-document-facade.js');
 const findHistoryFacade = require('./facade/find-history-facade.js');
+const diffFacade = require('./facade/diff-facade.js');
 
 const TEMPLATE_DIR = path.join(__dirname, '..', 'template');
 const GUI_HTML = path.join(TEMPLATE_DIR, 'gui.html');
@@ -90,6 +91,10 @@ function startServer(port, heartbeatTimeoutMs) {
     if (method === 'GET' && url === '/find/file-path') return json(res, 200, findFilePathFacade.tree());
     if (method === 'GET' && url === '/find/graph') return json(res, 200, findGraphFacade.graph());
     if (method === 'GET' && url === '/find/history') return json(res, 200, findHistoryFacade.history());
+    if (method === 'GET' && url === '/diff') {
+      const result = diffFacade.diff(parsed.searchParams.get('from'), parsed.searchParams.get('to'));
+      return json(res, result.ok ? 200 : 422, result);
+    }
     if (method === 'GET' && url === '/find/document') {
       const result = findDocumentFacade.document(parsed.searchParams.get('id'));
       return json(res, result.ok ? 200 : 404, result);

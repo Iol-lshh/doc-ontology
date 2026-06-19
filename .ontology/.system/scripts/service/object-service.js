@@ -106,6 +106,33 @@ function writeHead(historyDir, sha) {
   fs.writeFileSync(path.join(historyDir, HEAD), sha + '\n');
 }
 
+// 두 tree를 재귀 비교해 파일 경로별 변경을 낸다(blob 해시 기준).
+// 반환: { added:[path], removed:[path], modified:[path] }. 읽기 전용.
+function diffTrees(historyDir, treeA, treeB) {
+  const out = { added: [], removed: [], modified: [] };
+
+  const flat = (treeSha, prefix, acc) => {
+    if (!treeSha) return acc;
+    for (const e of parseTree(readObject(historyDir, treeSha).payload)) {
+      const p = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.mode === DIR_MODE) flat(e.sha, p, acc);
+      else acc[p] = e.sha;
+    }
+    return acc;
+  };
+
+  const a = flat(treeA, '', {});
+  const b = flat(treeB, '', {});
+  for (const p of Object.keys(b)) {
+    if (!(p in a)) out.added.push(p);
+    else if (a[p] !== b[p]) out.modified.push(p);
+  }
+  for (const p of Object.keys(a)) {
+    if (!(p in b)) out.removed.push(p);
+  }
+  return out;
+}
+
 module.exports = {
   writeBlob,
   writeTree,
@@ -115,6 +142,7 @@ module.exports = {
   parseCommit,
   readHead,
   writeHead,
+  diffTrees,
   FILE_MODE,
   DIR_MODE,
 };

@@ -34,6 +34,42 @@ function captureTree(systemDbDir, historyDir, dir) {
   return os.writeTree(historyDir, entries);
 }
 
+// 현재 .system 콘텐츠의 tree sha. 객체는 쓰되(같은 내용이면 blob 공유) HEAD는 안 옮긴다.
+// diff의 '세대↔현재' 비교에서 현재 쪽 tree로 쓴다(읽기 의미, 세대는 안 늘림).
+function currentTree(systemDbDir) {
+  return captureTree(systemDbDir, historyPath(systemDbDir), systemDbDir);
+}
+
+// 세대(commit sha)의 루트 tree sha. 'current'면 현재 콘텐츠, 'backup'이면 직전 여벌의 tree.
+// current·backup은 git 객체가 아니므로 비교 시점에 임시 tree로 뜬다(객체만 씀, 세대 불변).
+function treeOf(systemDbDir, generation) {
+  if (generation === 'current') return currentTree(systemDbDir);
+  if (generation === 'backup') {
+    const backupDir = path.join(systemDbDir, BACKUP_DIR);
+    if (!fs.existsSync(backupDir)) return null;
+    return captureTree(systemDbDir, historyPath(systemDbDir), backupDir);
+  }
+  const obj = os.readObject(historyPath(systemDbDir), generation);
+  if (!obj || obj.type !== 'commit') return null;
+  return os.parseCommit(obj.payload).tree;
+}
+
+// 두 tree의 파일 단위 변경(added/removed/modified). object-service에 위임하되 history 경로를 채운다.
+function fileDiff(systemDbDir, treeA, treeB) {
+  return os.diffTrees(historyPath(systemDbDir), treeA, treeB);
+}
+
+// tree에서 index/graphIndex.json blob을 찾아 파싱해 돌려준다(없으면 null).
+function graphOf(systemDbDir, treeSha) {
+  const historyDir = historyPath(systemDbDir);
+  const idx = os.parseTree(os.readObject(historyDir, treeSha).payload).find((e) => e.name === 'index');
+  if (!idx) return null;
+  const gi = os.parseTree(os.readObject(historyDir, idx.sha).payload).find((e) => e.name === 'graphIndex.json');
+  if (!gi) return null;
+  const text = os.readObject(historyDir, gi.sha).payload.toString('utf8').trim();
+  return text ? JSON.parse(text) : null;
+}
+
 // 그 시점의 콘텐츠를 새 세대(commit)로 적재. 직전 HEAD의 tree와 같으면 스킵.
 // 반환: { generation(commit sha), unchanged } — unchanged면 새 세대 안 만듦.
 function capture(systemDbDir, tsSec, tz) {
@@ -140,6 +176,10 @@ module.exports = {
   capture,
   list,
   restoreGeneration,
+  currentTree,
+  treeOf,
+  graphOf,
+  fileDiff,
   captureBackup,
   hasBackup,
   restoreBackup,

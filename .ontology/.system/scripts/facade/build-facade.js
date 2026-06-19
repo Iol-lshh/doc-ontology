@@ -49,6 +49,11 @@ function build() {
   }
 
   // ── 통과 시에만 기록 ──
+  // 덮어쓰기 직전, 기존 콘텐츠를 backup(1세대)으로 보관한다 — 빌드 롤백 대상(ADR 0010).
+  // 첫 빌드(기존 콘텐츠 없음)면 backup은 빈 채로 만들어지며, 그 경우 빌드 롤백은 빈 상태로 복구된다.
+  fs.mkdirSync(systemDb, { recursive: true });
+  snapshotService.captureBackup(systemDb);
+
   const indexDir = path.join(systemDb, 'index');
   fs.mkdirSync(indexDir, { recursive: true });
   writeJson(path.join(indexDir, 'fileIndex.json'), indexes.fileIndex);

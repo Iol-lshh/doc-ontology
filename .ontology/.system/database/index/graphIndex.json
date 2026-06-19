@@ -1,69 +1,69 @@
 {
   "nodes": {
-    "019edfa0-1e47-72eb-8d66-0a9b54ef973b": {
+    "019edfa6-e013-7063-96a8-0b40c968fbc2": {
       "type": "Class",
       "label": "example"
     },
-    "019edfa0-1e48-774c-b594-042d38e68e7f": {
+    "019edfa6-e014-78d4-ba72-713690b78554": {
       "type": "Instance",
       "label": "노드 type 예시"
     },
-    "019edfa0-1e48-7286-96af-fc56622b5c11": {
+    "019edfa6-e014-70af-9877-58ed1bc7f248": {
       "type": "Class",
       "label": "format"
     },
-    "019edfa0-1e48-712e-a0e8-9d538a7a4af9": {
+    "019edfa6-e014-7cae-a1c5-3908cd388f44": {
       "type": "Concept",
       "label": "산출물 온톨로지"
     },
-    "019edfa0-1e48-7bc2-85da-78f088ea3550": {
+    "019edfa6-e014-70a1-ab09-e900b08a1a30": {
       "type": "Class",
       "label": "reason"
     },
-    "019edfa0-1e48-747a-9597-44939726b967": {
+    "019edfa6-e014-7575-9d27-0b6064bdbfe5": {
       "type": "Instance",
       "label": "왜 본체와 부속을 나누는가"
     }
   },
   "edges": [
     {
-      "from": "019edfa0-1e48-774c-b594-042d38e68e7f",
-      "to": "019edfa0-1e48-712e-a0e8-9d538a7a4af9",
+      "from": "019edfa6-e014-78d4-ba72-713690b78554",
+      "to": "019edfa6-e014-7cae-a1c5-3908cd388f44",
       "rel": "about"
     },
     {
-      "from": "019edfa0-1e48-712e-a0e8-9d538a7a4af9",
-      "to": "019edfa0-1e48-774c-b594-042d38e68e7f",
+      "from": "019edfa6-e014-7cae-a1c5-3908cd388f44",
+      "to": "019edfa6-e014-78d4-ba72-713690b78554",
       "rel": "isAboutOf"
     },
     {
-      "from": "019edfa0-1e48-774c-b594-042d38e68e7f",
-      "to": "019edfa0-1e47-72eb-8d66-0a9b54ef973b",
+      "from": "019edfa6-e014-78d4-ba72-713690b78554",
+      "to": "019edfa6-e013-7063-96a8-0b40c968fbc2",
       "rel": "class"
     },
     {
-      "from": "019edfa0-1e47-72eb-8d66-0a9b54ef973b",
-      "to": "019edfa0-1e48-774c-b594-042d38e68e7f",
+      "from": "019edfa6-e013-7063-96a8-0b40c968fbc2",
+      "to": "019edfa6-e014-78d4-ba72-713690b78554",
       "rel": "hasInstance"
     },
     {
-      "from": "019edfa0-1e48-747a-9597-44939726b967",
-      "to": "019edfa0-1e48-712e-a0e8-9d538a7a4af9",
+      "from": "019edfa6-e014-7575-9d27-0b6064bdbfe5",
+      "to": "019edfa6-e014-7cae-a1c5-3908cd388f44",
       "rel": "about"
     },
     {
-      "from": "019edfa0-1e48-712e-a0e8-9d538a7a4af9",
-      "to": "019edfa0-1e48-747a-9597-44939726b967",
+      "from": "019edfa6-e014-7cae-a1c5-3908cd388f44",
+      "to": "019edfa6-e014-7575-9d27-0b6064bdbfe5",
       "rel": "isAboutOf"
     },
     {
-      "from": "019edfa0-1e48-747a-9597-44939726b967",
-      "to": "019edfa0-1e48-7bc2-85da-78f088ea3550",
+      "from": "019edfa6-e014-7575-9d27-0b6064bdbfe5",
+      "to": "019edfa6-e014-70a1-ab09-e900b08a1a30",
       "rel": "class"
     },
     {
-      "from": "019edfa0-1e48-7bc2-85da-78f088ea3550",
-      "to": "019edfa0-1e48-747a-9597-44939726b967",
+      "from": "019edfa6-e014-70a1-ab09-e900b08a1a30",
+      "to": "019edfa6-e014-7575-9d27-0b6064bdbfe5",
       "rel": "hasInstance"
     }
   ]

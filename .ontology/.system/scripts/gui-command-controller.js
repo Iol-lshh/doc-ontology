@@ -10,6 +10,7 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { load } = require('./config.js');
 const buildFacade = require('./facade/build-facade.js');
+const rollbackFacade = require('./facade/rollback-facade.js');
 const findFilePathFacade = require('./facade/find-file-path-facade.js');
 const findGraphFacade = require('./facade/find-graph-facade.js');
 const findDocumentFacade = require('./facade/find-document-facade.js');
@@ -115,11 +116,11 @@ function startServer(port, heartbeatTimeoutMs) {
       return;
     }
 
-    // rollback은 해당 Facade 연결 예정.
+    // rollback — generation 쿼리 있으면 히스토리 롤백, 없으면 빌드 롤백(ADR 0010).
     if (method === 'POST' && url === '/rollback') {
-      res.writeHead(501, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, error: 'not implemented yet', command: 'rollback' }));
-      return;
+      const generation = parsed.searchParams.get('generation');
+      const result = generation ? rollbackFacade.historyRollback(generation) : rollbackFacade.buildRollback();
+      return json(res, result.ok ? 200 : 422, result);
     }
 
     if (method === 'GET' && (url === '/' || url === '/index.html')) {

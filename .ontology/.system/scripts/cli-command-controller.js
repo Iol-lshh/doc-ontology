@@ -5,6 +5,7 @@
 // 명령 로직은 갖지 않는다 — Facade로 위임한다.
 
 const buildFacade = require('./facade/build-facade.js');
+const rollbackFacade = require('./facade/rollback-facade.js');
 
 const COMMANDS = ['build-ontology', 'rollback', 'find'];
 
@@ -19,8 +20,20 @@ function runBuild() {
   process.exit(1);
 }
 
+// rollback [세대] — 인자 없으면 빌드 롤백(직전 여벌), 있으면 히스토리 롤백(해당 세대).
+function runRollback(generation) {
+  const result = generation ? rollbackFacade.historyRollback(generation) : rollbackFacade.buildRollback();
+  if (result.ok) {
+    const what = result.kind === 'history' ? `세대 ${result.generation}` : '직전 여벌';
+    console.log(`롤백 성공 — ${what}로 복구`);
+    process.exit(0);
+  }
+  console.error(`롤백 실패 — ${result.error}`);
+  process.exit(1);
+}
+
 function main() {
-  const [, , command] = process.argv;
+  const [, , command, arg] = process.argv;
 
   if (!COMMANDS.includes(command)) {
     console.error(`알 수 없는 명령: ${command}`);
@@ -29,8 +42,9 @@ function main() {
   }
 
   if (command === 'build-ontology') return runBuild();
+  if (command === 'rollback') return runRollback(arg);
 
-  // rollback·find는 해당 Facade 연결 예정.
+  // find는 해당 Facade 연결 예정.
   console.error(`'${command}' 아직 미구현 (Facade 연결 예정).`);
   process.exit(1);
 }

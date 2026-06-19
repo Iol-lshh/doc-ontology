@@ -1,7 +1,9 @@
 # ADR 0010: 빌드 스냅샷 이력으로 복원과 버전 이력을 통합
 
-- Status: Accepted
+- Status: Accepted (저장 메커니즘은 [[0014]]가 대체 — git 객체 모델)
 - Date: 2026-06-19
+
+> 복원 정책(빌드 롤백/히스토리 롤백, backup, history.enabled)은 유효하다. 단 "세대별 디렉터리 통째 복사" 저장 방식은 [[0014]]의 git 객체 저장으로 대체됐다.
 
 ## Context
 

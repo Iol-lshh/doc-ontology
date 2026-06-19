@@ -17,6 +17,7 @@
 | [0011](0011-symmetric-frontends.md) | GUI/CLI 대칭 프론트엔드 | 진입 비대칭·엔진 대칭. Cli/Gui Controller가 동일 Facade 호출, 하트비트 서버 |
 | [0012](0012-snapshot-diff.md) | 스냅샷 비교 | 그래프 diff(노드·엣지) + 파일 diff. 세대↔세대, 세대↔현재 |
 | [0013](0013-layered-srp.md) | 레이어 분리·SRP | Controller→Facade→Service, 의존은 안쪽으로. 유스케이스/읽기소스당 Facade |
+| [0014](0014-git-object-store.md) | git 객체 스냅샷 저장 | 0010 저장 대체. blob/tree/commit(git 포맷), 내용 해시로 중복 세대 방지 |
 
 ## 데이터 흐름
 

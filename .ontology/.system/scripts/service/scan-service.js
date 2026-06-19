@@ -79,6 +79,8 @@ function walk(databaseDir, dir, classChain, nodes) {
         // Instance는 부모 폴더에서 class 자동 결정(ADR 0005: 위치가 진실).
         class: inClass ? classChain[classChain.length - 1].relPath : null,
         relations: relations(data),
+        // 원본 frontmatter에 박힌 id가 있으면 싣는다(재사용해 안정 유지, ADR 0002·0006).
+        existingId: data.id ? String(data.id) : null,
         body: body.trim(),
       });
     }

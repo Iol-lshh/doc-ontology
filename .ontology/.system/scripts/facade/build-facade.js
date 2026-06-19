@@ -20,6 +20,22 @@ function writeJson(file, obj) {
   fs.writeFileSync(file, JSON.stringify(obj, null, 2) + '\n');
 }
 
+// 새로 발급된 id를 database/ 원본 .md의 frontmatter에 되쓴다(ADR 0006 예외).
+// 기존 frontmatter는 보존하고 id 줄만 추가한다. Class는 폴더라 대상이 아니다(.md 노드만).
+function writebackId(dbDir, node) {
+  const file = path.join(dbDir, node.relPath);
+  const text = fs.readFileSync(file, 'utf8');
+  const fm = text.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (fm) {
+    // 기존 frontmatter 맨 앞에 id 줄을 넣는다(id 줄이 이미 없을 때만 — freshId 노드이므로 없다).
+    const updated = `---\nid: ${node.id}\n${fm[1]}\n---\n`;
+    fs.writeFileSync(file, updated + text.slice(fm[0].length));
+  } else {
+    // frontmatter가 없으면 새로 만든다.
+    fs.writeFileSync(file, `---\nid: ${node.id}\n---\n${text}`);
+  }
+}
+
 // 정규화 노드 1벌 — 빌드가 채운 frontmatter(id·type·label·관계 id)를 .system에 박는다(ADR 0008).
 function normalizedFrontmatter(node, indexes) {
   const lines = ['---', `id: ${node.id}`, `type: ${node.type}`, `label: ${JSON.stringify(node.label)}`];
@@ -48,6 +64,11 @@ function build() {
     return { ok: false, errors: result.errors, nodeCount: nodes.length };
   }
 
+  // 새로 발급된 id를 원본 .md에 되쓴다(ADR 0006 예외) — 재빌드 시 재사용해 id 안정.
+  // Class는 폴더라 frontmatter가 없어 대상이 아니다(Concept/Instance만, 즉 .md 노드).
+  const writtenBack = nodes.filter((n) => n.freshId && n.type !== 'Class');
+  for (const node of writtenBack) writebackId(dbDir, node);
+
   // ── 통과 시에만 기록 ──
   // 덮어쓰기 직전, 기존 콘텐츠를 backup(1세대)으로 보관한다 — 빌드 롤백 대상(ADR 0010).
   // 첫 빌드(기존 콘텐츠 없음)면 backup은 빈 채로 만들어지며, 그 경우 빌드 롤백은 빈 상태로 복구된다.
@@ -71,14 +92,28 @@ function build() {
     fs.writeFileSync(path.join(dir, `${node.id}.md`), normalizedFrontmatter(node, indexes) + body);
   }
 
-  // 스냅샷 적재 — 기록을 마친 .system 시점을 세대로 보존한다(ADR 0010).
+  // 스냅샷 적재 — git 객체 모델로 세대(commit)를 만든다(ADR 0014). 직전과 그래프가 같으면 새 세대 안 생김.
   // history.enabled off면 건너뛴다. 빌드 롤백(여벌)은 이와 무관하게 항상 가능(ADR 0008).
   let generation = null;
+  let unchanged = false;
   if (cfg.history.enabled) {
-    generation = snapshotService.capture(systemDb);
+    const now = new Date();
+    const tsSec = Math.floor(now.getTime() / 1000);
+    const off = -now.getTimezoneOffset(); // 분, 동쪽이 +
+    const tz = `${off >= 0 ? '+' : '-'}${String(Math.floor(Math.abs(off) / 60)).padStart(2, '0')}${String(Math.abs(off) % 60).padStart(2, '0')}`;
+    const result = snapshotService.capture(systemDb, tsSec, tz);
+    generation = result.generation;
+    unchanged = result.unchanged;
   }
 
-  return { ok: true, nodeCount: nodes.length, edgeCount: indexes.graphIndex.edges.length, generation };
+  return {
+    ok: true,
+    nodeCount: nodes.length,
+    edgeCount: indexes.graphIndex.edges.length,
+    generation,
+    unchanged,
+    idsWritten: writtenBack.length,
+  };
 }
 
 module.exports = { build };

@@ -12,6 +12,7 @@ const scanService = require('../service/scan-service.js');
 const idService = require('../service/id-service.js');
 const indexService = require('../service/index-service.js');
 const verifyService = require('../service/verify-service.js');
+const snapshotService = require('../service/snapshot-service.js');
 
 const TYPE_DIR = { Concept: 'concept', Class: 'class', Instance: 'instance' };
 
@@ -65,7 +66,14 @@ function build() {
     fs.writeFileSync(path.join(dir, `${node.id}.md`), normalizedFrontmatter(node, indexes) + body);
   }
 
-  return { ok: true, nodeCount: nodes.length, edgeCount: indexes.graphIndex.edges.length };
+  // 스냅샷 적재 — 기록을 마친 .system 시점을 세대로 보존한다(ADR 0010).
+  // history.enabled off면 건너뛴다. 빌드 롤백(여벌)은 이와 무관하게 항상 가능(ADR 0008).
+  let generation = null;
+  if (cfg.history.enabled) {
+    generation = snapshotService.capture(systemDb);
+  }
+
+  return { ok: true, nodeCount: nodes.length, edgeCount: indexes.graphIndex.edges.length, generation };
 }
 
 module.exports = { build };

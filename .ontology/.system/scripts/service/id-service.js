@@ -31,4 +31,9 @@ function assignIds(nodes) {
   return nodes.map((node) => ({ ...node, id: uuidv7() }));
 }
 
-module.exports = { assignIds, uuidv7 };
+// UUIDv7에 박힌 생성 시각(ms)을 복원한다. 상위 48bit = 첫 12 hex(하이픈 제외).
+function timestampOf(id) {
+  return parseInt(id.replace(/-/g, '').slice(0, 12), 16);
+}
+
+module.exports = { assignIds, uuidv7, timestampOf };

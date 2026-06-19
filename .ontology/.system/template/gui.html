@@ -4,27 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ontology GUI</title>
-  <style>
-    :root { --bg:#0f1115; --panel:#1a1d24; --line:#2a2f3a; --fg:#e6e8ec; --muted:#8a909c; --accent:#5b8cff; }
-    * { box-sizing: border-box; }
-    body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
-    header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
-    header h1 { font-size:15px; margin:0; font-weight:600; }
-    #status { margin-left:auto; font-size:12px; color:var(--muted); }
-    #status.live::before { content:"●"; color:#3fb950; margin-right:5px; }
-    #status.dead::before { content:"●"; color:#f85149; margin-right:5px; }
-    nav { display:flex; gap:4px; padding:8px 16px 0; border-bottom:1px solid var(--line); }
-    nav button { background:none; border:none; color:var(--muted); padding:8px 14px; cursor:pointer; border-radius:6px 6px 0 0; font-size:13px; }
-    nav button.active { color:var(--fg); background:var(--panel); }
-    .actions { display:flex; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line); }
-    .actions button { background:var(--panel); border:1px solid var(--line); color:var(--fg); padding:7px 14px; border-radius:6px; cursor:pointer; }
-    .actions button:hover { border-color:var(--accent); }
-    main { padding:16px; }
-    .tab { display:none; }
-    .tab.active { display:block; }
-    .placeholder { color:var(--muted); border:1px dashed var(--line); border-radius:8px; padding:32px; text-align:center; }
-    #log { margin:16px; padding:10px 12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); white-space:pre-wrap; min-height:20px; }
-  </style>
+  <link rel="stylesheet" href="statics/styles.css" />
 </head>
 <body>
   <header>
@@ -45,54 +25,14 @@
   </div>
 
   <main>
-    <section class="tab active" data-tab="filepath"><div class="placeholder">파일 구조도 (FindFilePathFacade) — 미구현</div></section>
-    <section class="tab" data-tab="graph"><div class="placeholder">관계 그래프 (FindGraphFacade) — 미구현</div></section>
-    <section class="tab" data-tab="history"><div class="placeholder">세대 히스토리 (FindHistoryFacade) — 미구현</div></section>
-    <section class="tab" data-tab="document"><div class="placeholder">노드 본문 (FindDocumentFacade) — 미구현</div></section>
+    <section class="tab active" data-tab="filepath"><file-path-view data-view></file-path-view></section>
+    <section class="tab" data-tab="graph"><graph-view data-view></graph-view></section>
+    <section class="tab" data-tab="history"><history-view data-view></history-view></section>
+    <section class="tab" data-tab="document"><document-view data-view></document-view></section>
   </main>
 
   <div id="log"></div>
 
-  <script>
-    const log = (m) => { document.getElementById('log').textContent = m; };
-
-    // 탭 전환
-    document.getElementById('tabs').addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-tab]');
-      if (!btn) return;
-      const tab = btn.dataset.tab;
-      document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('active', s.dataset.tab === tab));
-    });
-
-    // 명령 버튼 — 서버 엔드포인트 호출 (현재 501 stub)
-    document.querySelectorAll('.actions button').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const cmd = btn.dataset.cmd;
-        try {
-          const res = await fetch('/' + cmd, { method: 'POST' });
-          const data = await res.json();
-          log(cmd + ': ' + JSON.stringify(data));
-        } catch (err) {
-          log(cmd + ' 실패: ' + err.message);
-        }
-      });
-    });
-
-    // 하트비트 — 탭이 살아있는 동안 주기적 ping. 끊기면 서버가 self-exit (ADR 0011).
-    const status = document.getElementById('status');
-    async function beat() {
-      try {
-        await fetch('/heartbeat', { method: 'POST' });
-        status.textContent = '연결됨';
-        status.className = 'live';
-      } catch {
-        status.textContent = '서버 연결 끊김';
-        status.className = 'dead';
-      }
-    }
-    beat();
-    setInterval(beat, 3000);
-  </script>
+  <script type="module" src="statics/app.js"></script>
 </body>
 </html>

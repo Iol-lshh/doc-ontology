@@ -15,6 +15,7 @@
 - `system.database.path` — 빌드 산출물(`.system/database`) 위치. 기본 `./.system/database/`. config.yml 위치(.ontology) 기준 resolve하며 상대(`../` 포함)·절대경로 모두 허용한다. 산출물은 재생성 가능한 파생물([[0003]])이라 레포 밖으로 빼 `.gitignore`할 수 있다. 사람 입력 `database/`는 고정이라 config 대상이 아니다.
 - `history.enabled` — 스냅샷 이력 on/off([[0010]]). off면 히스토리 롤백 불가, 빌드 롤백은 가능.
 - `gui.port` — GUI 서버 포트([[0011]]).
+- `gui.heartbeatTimeoutSec` — 하트비트가 이 시간(초) 동안 없으면 서버 자동종료([[0011]]).
 
 빌드가 이 파일을 읽어 동작을 결정한다.
 

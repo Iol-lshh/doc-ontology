@@ -1,0 +1,40 @@
+:root { --bg:#0f1115; --panel:#1a1d24; --line:#2a2f3a; --fg:#e6e8ec; --muted:#8a909c; --accent:#5b8cff; }
+* { box-sizing: border-box; }
+body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
+header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
+header h1 { font-size:15px; margin:0; font-weight:600; }
+#status { margin-left:auto; font-size:12px; color:var(--muted); }
+#status.live::before { content:"●"; color:#3fb950; margin-right:5px; }
+#status.dead::before { content:"●"; color:#f85149; margin-right:5px; }
+nav { display:flex; gap:4px; padding:8px 16px 0; border-bottom:1px solid var(--line); }
+nav button { background:none; border:none; color:var(--muted); padding:8px 14px; cursor:pointer; border-radius:6px 6px 0 0; font-size:13px; }
+nav button.active { color:var(--fg); background:var(--panel); }
+.actions { display:flex; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line); }
+.actions button { background:var(--panel); border:1px solid var(--line); color:var(--fg); padding:7px 14px; border-radius:6px; cursor:pointer; }
+.actions button:hover { border-color:var(--accent); }
+main { padding:16px; }
+.tab { display:none; }
+.tab.active { display:block; }
+.placeholder { color:var(--muted); border:1px dashed var(--line); border-radius:8px; padding:32px; text-align:center; }
+.tree, .tree ul { list-style:none; margin:0; padding-left:18px; }
+.tree > li > .row { padding-left:0; }
+.row { padding:3px 6px; border-radius:5px; cursor:default; }
+.row.node { cursor:pointer; }
+.row.node:hover { background:var(--panel); }
+.badge { font-size:10px; padding:1px 6px; border-radius:10px; margin-right:6px; }
+.badge.Concept { background:#1f3a5f; color:#9cc4ff; }
+.badge.Class { background:#3a2f1f; color:#ffd79c; }
+.badge.Instance { background:#1f3a2f; color:#9cffc4; }
+.dir { color:var(--muted); }
+.edge-list { font-family:ui-monospace,monospace; font-size:12px; }
+.edge-list div { padding:2px 0; }
+.edge-list .rel { color:var(--accent); }
+.doc { white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; }
+.doc h2 { font-family:inherit; margin:0 0 10px; }
+.gen-list { display:flex; flex-direction:column; gap:6px; }
+.gen { padding:8px 12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; font-family:ui-monospace,monospace; font-size:12px; }
+.gen-no { color:var(--accent); font-weight:600; margin-right:8px; }
+.gen-time { color:var(--fg); margin-right:8px; }
+.gen-id { color:var(--muted); font-size:11px; }
+.gen-meta { color:var(--muted); margin-left:8px; }
+#log { margin:16px; padding:10px 12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); white-space:pre-wrap; min-height:20px; }

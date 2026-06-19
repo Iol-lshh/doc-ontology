@@ -1,9 +1,12 @@
 'use strict';
 
-// index-service (ADR 0006·0007). id 발급된 노드 목록을 받아 인덱스 3종을 만든다.
-// - label→id 해소: 사람이 쓴 label 관계를 id로 변환(미해소는 표시해 verify가 잡음)
-// - 역방향 edge 자동 생성(ADR 0006 규칙표)
-// 단일 책임: 노드 목록 → 인덱스 3종. 검증·기록은 다른 단계가 한다.
+// index-service (ADR 0006·0007). 인덱스 3종을 책임진다.
+// 쓰기: id 발급된 노드 목록 → 인덱스 3종(label→id 해소 + 역방향 edge 자동 생성, ADR 0006 규칙표).
+// 읽기: 기록된 인덱스 3종을 로드(find류 조회가 사용).
+// 단일 책임: 인덱스 3종. 검증·기록 정책은 BuildFacade가 한다.
+
+const fs = require('node:fs');
+const path = require('node:path');
 
 const REVERSE = {
   broader: 'narrower',
@@ -62,4 +65,20 @@ function build(nodes) {
   return { fileIndex, graphIndex, labelIndex, unresolved };
 }
 
-module.exports = { build, REVERSE };
+// 기록된 인덱스 3종을 읽는다. systemDbDir는 config가 resolve한 산출물 경로.
+function read(systemDbDir) {
+  const indexDir = path.join(systemDbDir, 'index');
+  const readJson = (name) => {
+    const file = path.join(indexDir, name);
+    if (!fs.existsSync(file)) return null;
+    const text = fs.readFileSync(file, 'utf8').trim();
+    return text ? JSON.parse(text) : null;
+  };
+  return {
+    fileIndex: readJson('fileIndex.json'),
+    graphIndex: readJson('graphIndex.json'),
+    labelIndex: readJson('labelIndex.json'),
+  };
+}
+
+module.exports = { build, read, REVERSE };

@@ -15,7 +15,7 @@ const CONFIG_PATH = path.join(ONTOLOGY_ROOT, 'config.yml');
 const DEFAULTS = {
   system: { database: { path: './.system/database/' } },
   history: { enabled: true },
-  gui: { port: 7777 },
+  gui: { port: 7777, heartbeatTimeoutSec: 10 },
 };
 
 function scalar(raw) {

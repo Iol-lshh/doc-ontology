@@ -10,12 +10,38 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { load } = require('./config.js');
 const buildFacade = require('./facade/build-facade.js');
+const findFilePathFacade = require('./facade/find-file-path-facade.js');
+const findGraphFacade = require('./facade/find-graph-facade.js');
+const findDocumentFacade = require('./facade/find-document-facade.js');
+const findHistoryFacade = require('./facade/find-history-facade.js');
 
 const TEMPLATE_DIR = path.join(__dirname, '..', 'template');
 const GUI_HTML = path.join(TEMPLATE_DIR, 'gui.html');
+const STATICS_DIR = path.join(TEMPLATE_DIR, 'statics');
 
-// 하트비트: GUI 탭이 주기적으로 ping. 이 시간 동안 ping이 없으면 좀비로 보고 self-exit.
-const HEARTBEAT_TIMEOUT_MS = 10_000;
+const MIME = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.html': 'text/html; charset=utf-8' };
+
+// /statics/* 정적 파일 제공. statics 디렉터리 밖으로 나가는 경로(.. 등)는 막는다.
+function serveStatic(res, urlPath) {
+  const rel = decodeURIComponent(urlPath.replace(/^\/statics\//, ''));
+  const file = path.join(STATICS_DIR, rel);
+  if (!file.startsWith(STATICS_DIR + path.sep)) {
+    res.writeHead(403);
+    res.end('forbidden');
+    return;
+  }
+  fs.readFile(file, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('not found');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+    res.end(data);
+  });
+}
+
+// 하트비트 타임아웃은 config(gui.heartbeatTimeoutSec)에서 읽는다(ADR 0009).
 
 // 떠 있는 서버가 우리 것인지 가리는 표식 (다른 앱이 같은 포트를 쓸 때 오인 방지).
 const HEALTH_MARKER = 'ontology-gui';
@@ -43,11 +69,30 @@ function checkExisting(port) {
   });
 }
 
-function startServer(port) {
+function startServer(port, heartbeatTimeoutMs) {
   let lastBeat = Date.now();
 
+  const json = (res, code, obj) => {
+    res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(obj));
+  };
+
   const server = http.createServer((req, res) => {
-    const { method, url } = req;
+    const { method } = req;
+    const parsed = new URL(req.url, 'http://127.0.0.1');
+    const url = parsed.pathname;
+
+    // 정적 자산 — front 컴포넌트(js/css). 읽기 전용.
+    if (method === 'GET' && url.startsWith('/statics/')) return serveStatic(res, url);
+
+    // 조회 엔드포인트 — find류 Facade로 위임(ADR 0013). 읽기 전용.
+    if (method === 'GET' && url === '/find/file-path') return json(res, 200, findFilePathFacade.tree());
+    if (method === 'GET' && url === '/find/graph') return json(res, 200, findGraphFacade.graph());
+    if (method === 'GET' && url === '/find/history') return json(res, 200, findHistoryFacade.history());
+    if (method === 'GET' && url === '/find/document') {
+      const result = findDocumentFacade.document(parsed.searchParams.get('id'));
+      return json(res, result.ok ? 200 : 404, result);
+    }
 
     if (method === 'GET' && url === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -96,7 +141,7 @@ function startServer(port) {
 
   // 하트비트 감시: 타임아웃 넘게 ping이 없으면 self-exit (좀비 방지).
   const watcher = setInterval(() => {
-    if (Date.now() - lastBeat > HEARTBEAT_TIMEOUT_MS) {
+    if (Date.now() - lastBeat > heartbeatTimeoutMs) {
       console.log('하트비트 끊김 — 서버 종료');
       clearInterval(watcher);
       server.close(() => process.exit(0));
@@ -129,7 +174,7 @@ async function main() {
     openBrowser(url);
     return;
   }
-  startServer(port);
+  startServer(port, cfg.gui.heartbeatTimeoutSec * 1000);
 }
 
 main();

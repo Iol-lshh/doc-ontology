@@ -38,3 +38,12 @@ main { padding:16px; }
 .gen-id { color:var(--muted); font-size:11px; }
 .gen-meta { color:var(--muted); margin-left:8px; }
 #log { margin:16px; padding:10px 12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); white-space:pre-wrap; min-height:20px; }
+.diff-bar { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.diff-bar select { background:var(--panel); border:1px solid var(--line); color:var(--fg); padding:6px 8px; border-radius:6px; font-size:12px; max-width:280px; }
+.diff-arrow { color:var(--muted); }
+.diff-bar button { background:var(--panel); border:1px solid var(--line); color:var(--fg); padding:6px 14px; border-radius:6px; cursor:pointer; }
+.diff-bar button:hover { border-color:var(--accent); }
+.diff-result h3 { font-size:13px; color:var(--muted); margin:14px 0 6px; }
+.d-add { color:#3fb950; }
+.d-del { color:#f85149; }
+.d-mod { color:#d29922; }

@@ -4,6 +4,7 @@ import './components/file-path-view.js';
 import './components/graph-view.js';
 import './components/history-view.js';
 import './components/document-view.js';
+import './components/diff-view.js';
 import { api } from './api.js';
 
 const log = (m) => { document.getElementById('log').textContent = m; };

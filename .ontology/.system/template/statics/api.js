@@ -5,6 +5,8 @@ export const api = {
   graph: () => fetch('/find/graph').then((r) => r.json()),
   history: () => fetch('/find/history').then((r) => r.json()),
   document: (id) => fetch('/find/document?id=' + encodeURIComponent(id)).then((r) => r.json()),
+  diff: (from, to) =>
+    fetch(`/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`).then((r) => r.json()),
   command: (cmd) => fetch('/' + cmd, { method: 'POST' }).then((r) => r.json()),
   heartbeat: () => fetch('/heartbeat', { method: 'POST' }),
 };

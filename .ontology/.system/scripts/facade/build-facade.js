@@ -1,0 +1,71 @@
+'use strict';
+
+// BuildFacade (ADR 0013). build-ontology 유스케이스를 조율한다.
+// scan → id → index → verify → (통과 시에만) 기록. Service를 순서·정책대로 엮을 뿐
+// 스캔·판정·검증 로직 자체는 갖지 않는다(각 Service에 있다).
+// 검증 통과 시에만 .system 을 갱신한다(ADR 0008) — 깨진 상태는 남기지 않는다.
+
+const fs = require('node:fs');
+const path = require('node:path');
+const { load } = require('../config.js');
+const scanService = require('../service/scan-service.js');
+const idService = require('../service/id-service.js');
+const indexService = require('../service/index-service.js');
+const verifyService = require('../service/verify-service.js');
+
+const TYPE_DIR = { Concept: 'concept', Class: 'class', Instance: 'instance' };
+
+function writeJson(file, obj) {
+  fs.writeFileSync(file, JSON.stringify(obj, null, 2) + '\n');
+}
+
+// 정규화 노드 1벌 — 빌드가 채운 frontmatter(id·type·label·관계 id)를 .system에 박는다(ADR 0008).
+function normalizedFrontmatter(node, indexes) {
+  const lines = ['---', `id: ${node.id}`, `type: ${node.type}`, `label: ${JSON.stringify(node.label)}`];
+  const out = indexes.graphIndex.edges.filter((e) => e.from === node.id);
+  if (out.length) {
+    lines.push('edges:');
+    for (const e of out) lines.push(`  - { rel: ${e.rel}, to: ${e.to} }`);
+  }
+  lines.push('---');
+  return lines.join('\n') + '\n';
+}
+
+function build() {
+  const cfg = load();
+  const dbDir = cfg.databaseDir; // 사람 입력(고정)
+  const systemDb = cfg.systemDbDir; // 빌드 산출물(config로 조정 가능)
+
+  // ── 조율 사슬 ──
+  const scanned = scanService.scan(dbDir);
+  const nodes = idService.assignIds(scanned);
+  const indexes = indexService.build(nodes);
+  const result = verifyService.verify(nodes, indexes);
+
+  if (!result.ok) {
+    // 검증 실패 — .system 갱신하지 않음(ADR 0008). 깨진 상태 안 남김.
+    return { ok: false, errors: result.errors, nodeCount: nodes.length };
+  }
+
+  // ── 통과 시에만 기록 ──
+  const indexDir = path.join(systemDb, 'index');
+  fs.mkdirSync(indexDir, { recursive: true });
+  writeJson(path.join(indexDir, 'fileIndex.json'), indexes.fileIndex);
+  writeJson(path.join(indexDir, 'graphIndex.json'), indexes.graphIndex);
+  writeJson(path.join(indexDir, 'labelIndex.json'), indexes.labelIndex);
+
+  // 정규화 노드 1벌 — 기존 것을 지우고 다시 쓴다(여벌이므로 재생성 가능).
+  for (const dir of Object.values(TYPE_DIR)) {
+    fs.rmSync(path.join(systemDb, dir), { recursive: true, force: true });
+    fs.mkdirSync(path.join(systemDb, dir), { recursive: true });
+  }
+  for (const node of nodes) {
+    const dir = path.join(systemDb, TYPE_DIR[node.type]);
+    const body = node.body ? `\n${node.body}\n` : '';
+    fs.writeFileSync(path.join(dir, `${node.id}.md`), normalizedFrontmatter(node, indexes) + body);
+  }
+
+  return { ok: true, nodeCount: nodes.length, edgeCount: indexes.graphIndex.edges.length };
+}
+
+module.exports = { build };

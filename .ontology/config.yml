@@ -1,0 +1,16 @@
+# 온톨로지 설정. 사람이 편집하는 영역(.system 밖, ADR 0003).
+# 빌드가 이 값을 읽어 정책을 적용한다.
+
+# .system/database를 특정 위치로 지정하는 옵션
+system:
+  database:
+    path: './.system/database/'
+
+# 빌드 통과 스냅샷 이력 (ADR 0010). 깨진 빌드에서 과거 시점으로 복원.
+history:
+  enabled: true   # false면 히스토리 적재 안 함. 히스토리 롤백 불가, 빌드 롤백은 가능(ADR 0008 여벌).
+  # 텍스트 스냅샷이라 용량이 작아 세대 제한 없이 전부 보존한다.
+
+# GUI 서버 (ADR 0011). cli.sh gui 가 이 포트로 health 확인 — 떠 있으면 브라우저만, 없으면 기동.
+gui:
+  port: 7777

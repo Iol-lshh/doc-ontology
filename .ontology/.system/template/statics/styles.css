@@ -42,7 +42,14 @@ main { padding:16px; }
 .folder-name:hover { background:var(--panel); }
 .edge-list { font-family:ui-monospace,monospace; font-size:12px; }
 .edge-list div { padding:2px 0; }
-.edge-list .rel { color:var(--accent); }
+.rel { color:var(--accent); }
+/* 관계 그래프 트리 */
+.gtoggle { display:inline-block; width:14px; cursor:pointer; user-select:none; }
+.gtoggle::before { content:"▸"; color:var(--muted); }
+.tree details[open] > summary > .gtoggle::before { content:"▾"; }
+.gopen { cursor:pointer; }
+.gopen:hover { text-decoration:underline; }
+.gcount { color:var(--muted); font-size:10px; margin-left:8px; }
 .doc { white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; }
 .doc h2 { font-family:inherit; margin:0 0 10px; }
 .gen-list { display:flex; flex-direction:column; gap:6px; }

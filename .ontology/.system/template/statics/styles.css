@@ -18,6 +18,11 @@ main { padding:16px; }
 .placeholder { color:var(--muted); border:1px dashed var(--line); border-radius:8px; padding:32px; text-align:center; }
 .tree, .tree ul { list-style:none; margin:0; padding-left:18px; }
 .tree > li > .row { padding-left:0; }
+/* 트리 가지선 — 중첩 항목 왼쪽에 세로선 + ├─/└─ 가지(은은하게). */
+.tree ul > li { position:relative; }
+.tree ul > li::before { content:""; position:absolute; left:-10px; top:0; bottom:0; border-left:1px solid var(--line); }
+.tree ul > li:last-child::before { bottom:auto; height:13px; }
+.tree ul > li::after { content:""; position:absolute; left:-10px; top:13px; width:8px; border-top:1px solid var(--line); }
 .row { padding:3px 6px; border-radius:5px; cursor:default; }
 .row.node { cursor:pointer; }
 .row.node:hover { background:var(--panel); }
@@ -26,6 +31,15 @@ main { padding:16px; }
 .badge.Class { background:#3a2f1f; color:#ffd79c; }
 .badge.Instance { background:#1f3a2f; color:#9cffc4; }
 .dir { color:var(--muted); }
+.fname { color:var(--muted); font-size:11px; margin-left:6px; }
+.tree summary.folder { list-style:none; cursor:default; }
+.tree summary.folder::-webkit-details-marker { display:none; }
+.folder-toggle { cursor:pointer; margin-right:6px; user-select:none; }
+.folder-toggle::before { content:"📁"; }
+.tree details[open] > summary.folder .folder-toggle::before { content:"📂"; }
+.folder-toggle:hover { filter:brightness(1.4); }
+.folder-name { cursor:pointer; border-radius:4px; padding:1px 4px; }
+.folder-name:hover { background:var(--panel); }
 .edge-list { font-family:ui-monospace,monospace; font-size:12px; }
 .edge-list div { padding:2px 0; }
 .edge-list .rel { color:var(--accent); }

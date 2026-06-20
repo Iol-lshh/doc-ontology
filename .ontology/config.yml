@@ -14,4 +14,4 @@ history:
 # GUI 서버 (ADR 0011). cli.sh gui 가 이 포트로 health 확인 — 떠 있으면 브라우저만, 없으면 기동.
 gui:
   port: 7777
-  heartbeatTimeoutSec: 90   # 이 시간 동안 하트비트가 없으면 좀비로 보고 서버 자동종료.
+  heartbeatTimeoutSec: 30   # 이 시간 동안 하트비트가 없으면 좀비로 보고 서버 자동종료.

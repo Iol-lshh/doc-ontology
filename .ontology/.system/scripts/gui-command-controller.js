@@ -14,6 +14,7 @@ const saveFacade = require('./facade/save-facade.js');
 const checkoutFacade = require('./facade/checkout-facade.js');
 const restoreFacade = require('./facade/restore-facade.js');
 const resetFacade = require('./facade/reset-facade.js');
+const removeAllFacade = require('./facade/remove-all-facade.js');
 const findFilePathFacade = require('./facade/find-file-path-facade.js');
 const findGraphFacade = require('./facade/find-graph-facade.js');
 const findDocumentFacade = require('./facade/find-document-facade.js');
@@ -145,6 +146,11 @@ function startServer(port, heartbeatTimeoutMs) {
     if (method === 'POST' && url === '/reset') {
       const result = resetFacade.reset();
       return json(res, result.ok ? 200 : 422, result);
+    }
+
+    // remove-all(초기화) — 완전 비우기. 확인(confirm)은 프런트가 받고, 서버는 실행만 한다.
+    if (method === 'POST' && url === '/remove-all') {
+      return json(res, 200, removeAllFacade.removeAll());
     }
 
     if (method === 'GET' && (url === '/' || url === '/index.html')) {

@@ -12,6 +12,8 @@ nav button.active { color:var(--fg); background:var(--panel); }
 .actions { display:flex; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line); }
 .actions button { background:var(--panel); border:1px solid var(--line); color:var(--fg); padding:7px 14px; border-radius:6px; cursor:pointer; }
 .actions button:hover { border-color:var(--accent); }
+.actions button.danger { border-color:#5a2a2a; color:#f8a8a8; }
+.actions button.danger:hover { border-color:#f85149; background:rgba(248,81,73,0.12); }
 main { padding:16px; }
 .tab { display:none; }
 .tab.active { display:block; }

@@ -32,6 +32,8 @@ document.addEventListener('node-open', (e) => {
 document.querySelectorAll('.actions button').forEach((btn) => {
   btn.addEventListener('click', async () => {
     const cmd = btn.dataset.cmd;
+    // 위험 명령(초기화 등)은 실행 전 확인을 받는다.
+    if (btn.dataset.confirm && !confirm(btn.dataset.confirm)) return;
     try {
       const data = await api.command(cmd);
       log(cmd + ': ' + JSON.stringify(data));

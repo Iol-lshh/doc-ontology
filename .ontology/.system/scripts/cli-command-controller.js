@@ -4,14 +4,16 @@
 // CLI 진입점이자 어댑터: argv 파싱 + 콘솔 출력. Facade를 직접 호출한다(단명 프로세스).
 // 명령 로직은 갖지 않는다 — Facade로 위임한다.
 
+const readline = require('node:readline');
 const buildFacade = require('./facade/build-facade.js');
 const saveFacade = require('./facade/save-facade.js');
 const checkoutFacade = require('./facade/checkout-facade.js');
 const restoreFacade = require('./facade/restore-facade.js');
 const resetFacade = require('./facade/reset-facade.js');
+const removeAllFacade = require('./facade/remove-all-facade.js');
 const diffFacade = require('./facade/diff-facade.js');
 
-const COMMANDS = ['build-ontology', 'save', 'checkout', 'restore', 'reset', 'find', 'diff'];
+const COMMANDS = ['build-ontology', 'save', 'checkout', 'restore', 'reset', 'remove-all', 'find', 'diff'];
 
 function runBuild() {
   const result = buildFacade.build();
@@ -43,7 +45,7 @@ function runCheckout(generation) {
   process.exit(1);
 }
 
-// restore — 작업본+유저 DB를 backup(마지막 저장)으로 되돌림. 히스토리·backup 불변.
+// restore(초기화) — 작업본+유저 DB를 backup(마지막 저장)으로 되돌림. 히스토리·backup 불변.
 function runRestore() {
   const result = restoreFacade.restore();
   if (result.ok) {
@@ -52,6 +54,27 @@ function runRestore() {
   }
   console.error(`restore 실패 — ${result.error}`);
   process.exit(1);
+}
+
+// remove-all(데이터 비우기) — 온톨로지를 완전히 비운다(database·.system·history·backup). 되돌릴 수 없어 확인을 받는다.
+// 비대화식 실행은 `remove-all --confirm`(또는 yes)로 프롬프트를 건너뛴다.
+function runRemoveAll(arg) {
+  const doIt = () => {
+    removeAllFacade.removeAll();
+    console.log('데이터 비우기 완료 — database·.system·히스토리·backup 모두 비움. (build-ontology로 새로 시작)');
+    process.exit(0);
+  };
+  if (arg === '--confirm' || arg === '--yes' || arg === 'yes') return doIt();
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  rl.question('⚠ 정말 전부 비웁니까? database·시스템·히스토리·backup이 모두 삭제되어 되돌릴 수 없습니다. 진행하려면 yes 입력 > ', (ans) => {
+    rl.close();
+    if (ans.trim().toLowerCase() === 'yes') doIt();
+    else {
+      console.log('취소됨 — 아무것도 삭제하지 않았습니다.');
+      process.exit(0);
+    }
+  });
 }
 
 // reset — 현재 HEAD 이후 세대를 버림(TIP=HEAD). 유저 DB·backup 불변.
@@ -97,6 +120,7 @@ function main() {
   if (command === 'checkout') return runCheckout(arg);
   if (command === 'restore') return runRestore();
   if (command === 'reset') return runReset();
+  if (command === 'remove-all') return runRemoveAll(arg);
   if (command === 'diff') return runDiff(arg, arg2);
 
   // find는 해당 Facade 연결 예정.

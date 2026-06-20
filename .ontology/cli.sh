@@ -6,6 +6,7 @@
 #   cli.sh checkout <세대>       → 체크: 작업본+유저 DB를 그 세대로 이동(HEAD 이동, TIP 불변)
 #   cli.sh restore              → 초기화: 작업본+유저 DB를 backup(마지막 저장)으로 되돌림
 #   cli.sh reset                → 리셋: 현재 HEAD 이후 세대 폐기(TIP=HEAD)
+#   cli.sh remove-all [--confirm] → 데이터 비우기: database·시스템·히스토리·backup 전부 삭제(확인 필요)
 #   cli.sh diff <from> <to>     → 비교 (세대/current/backup)
 set -euo pipefail
 
@@ -19,7 +20,7 @@ case "$cmd" in
     exec node "$SCRIPTS/gui-command-controller.js"
     ;;
   "")
-    echo "사용법: cli.sh <gui|build-ontology|save|checkout|restore|reset|diff> [옵션]" >&2
+    echo "사용법: cli.sh <gui|build-ontology|save|checkout|restore|reset|remove-all|diff> [옵션]" >&2
     exit 2
     ;;
   *)

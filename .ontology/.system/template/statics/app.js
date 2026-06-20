@@ -35,7 +35,7 @@ document.querySelectorAll('.actions button').forEach((btn) => {
     try {
       const data = await api.command(cmd);
       log(cmd + ': ' + JSON.stringify(data));
-      // build·save·rollback 후 현재 탭을 다시 로드(작업본·세대가 바뀜).
+      // build·save·restore·reset 후 현재 탭을 다시 로드(작업본·세대가 바뀜).
       if (data.ok !== false) {
         activate(document.querySelector('nav button.active').dataset.tab);
       }

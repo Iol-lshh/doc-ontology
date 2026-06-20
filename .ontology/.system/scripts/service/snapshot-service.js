@@ -105,40 +105,56 @@ function graphOf(systemDbDir, treeSha) {
   return text ? JSON.parse(text) : null;
 }
 
-// 그 시점의 콘텐츠를 새 세대(commit)로 적재. 직전 HEAD의 tree와 같으면 스킵.
-// 반환: { generation(commit sha), unchanged } — unchanged면 새 세대 안 만듦.
+// 그 시점의 콘텐츠를 새 세대(commit)로 적재. 항상 TIP(끝)에 붙이고 TIP·HEAD를 새 세대로 옮긴다.
+// (체크로 과거에 가 있어도 저장은 끝에 추가 — 사용자 결정 Q2.) TIP tree와 같으면 새 세대 없이 HEAD만 TIP로.
+// 반환: { generation(commit sha), unchanged }.
 function capture(systemDbDir, tsSec, tz) {
   const historyDir = historyPath(systemDbDir);
   const rootTree = captureTree(systemDbDir, historyDir, systemDbDir);
 
-  const head = os.readHead(historyDir);
-  if (head) {
-    const headCommit = os.parseCommit(os.readObject(historyDir, head).payload);
-    if (headCommit.tree === rootTree) return { generation: head, unchanged: true };
+  const tip = os.readTip(historyDir);
+  if (tip) {
+    const tipCommit = os.parseCommit(os.readObject(historyDir, tip).payload);
+    if (tipCommit.tree === rootTree) {
+      os.writeHead(historyDir, tip); // 커서를 끝으로(저장 의미: 끝에서 작업)
+      return { generation: tip, unchanged: true };
+    }
   }
 
-  const commit = os.writeCommit(historyDir, {
-    tree: rootTree,
-    parent: head,
-    message: 'build',
-    tsSec,
-    tz,
-  });
+  const commit = os.writeCommit(historyDir, { tree: rootTree, parent: tip, message: 'build', tsSec, tz });
+  os.writeTip(historyDir, commit);
   os.writeHead(historyDir, commit);
   return { generation: commit, unchanged: false };
 }
 
-// 세대 목록(최신→과거): HEAD부터 parent 체인 순회. 각 세대의 노드 수·시각 메타.
+// 세대 목록(과거→최신): TIP부터 parent 체인 순회. 각 세대의 노드 수·시각 + 현재 HEAD 여부.
 function list(systemDbDir) {
   const historyDir = historyPath(systemDbDir);
-  let sha = os.readHead(historyDir);
+  const head = os.readHead(historyDir);
+  let sha = os.readTip(historyDir);
   const out = [];
   while (sha) {
     const commit = os.parseCommit(os.readObject(historyDir, sha).payload);
-    out.push({ generation: sha, nodeCount: countNodes(historyDir, commit.tree), ts: commit.tsSec * 1000 });
+    out.push({ generation: sha, nodeCount: countNodes(historyDir, commit.tree), ts: commit.tsSec * 1000, isHead: sha === head });
     sha = commit.parent;
   }
   return out.reverse(); // 과거 → 최신 (UI가 #1부터)
+}
+
+// 현재 TIP/HEAD sha 조회 + HEAD 이동(체크·초기화가 커서를 옮길 때).
+function tip(systemDbDir) {
+  return os.readTip(historyPath(systemDbDir));
+}
+function setHead(systemDbDir, sha) {
+  os.writeHead(historyPath(systemDbDir), sha);
+}
+
+// 리셋 — HEAD 이후(자손) 세대를 버린다: TIP을 HEAD로 당긴다. 객체는 남되 도달 불가.
+function truncate(systemDbDir) {
+  const head = os.readHead(historyPath(systemDbDir));
+  if (!head) return { ok: false, error: '세대 없음 — 자를 히스토리가 없습니다.' };
+  os.writeTip(historyPath(systemDbDir), head);
+  return { ok: true, generation: head };
 }
 
 // tree에서 index/fileIndex.json blob을 찾아 노드 수를 센다.
@@ -189,17 +205,30 @@ function copyContent(src, dest) {
   }
 }
 
-// save가 호출 — 현재 작업본을 backup(안전망, 마지막 저장)으로 보관. revert는 이걸 안 건드린다.
+// save가 호출 — 현재 작업본을 backup(안전망, 마지막 저장)으로 보관. 체크는 이걸 안 건드린다.
 function captureBackup(systemDbDir) {
   const dest = path.join(systemDbDir, BACKUP_DIR);
   fs.rmSync(dest, { recursive: true, force: true });
   copyContent(systemDbDir, dest);
 }
 
+// 초기화 — 작업본(.system 콘텐츠)을 backup으로 되돌린다(history·backup 자체는 보존). 유저 DB는 facade가 역생성.
+function restoreBackup(systemDbDir) {
+  const backupDir = path.join(systemDbDir, BACKUP_DIR);
+  if (!fs.existsSync(backupDir)) return false;
+  clearContent(systemDbDir);
+  copyContent(backupDir, systemDbDir);
+  return true;
+}
+
 module.exports = {
   capture,
   list,
+  tip,
+  setHead,
+  truncate,
   restoreGeneration,
+  restoreBackup,
   currentTree,
   treeFromFileMap,
   treeOf,

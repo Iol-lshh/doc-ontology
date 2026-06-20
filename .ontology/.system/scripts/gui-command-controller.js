@@ -11,7 +11,9 @@ const { execFile } = require('node:child_process');
 const { load } = require('./config.js');
 const buildFacade = require('./facade/build-facade.js');
 const saveFacade = require('./facade/save-facade.js');
-const revertFacade = require('./facade/revert-facade.js');
+const checkoutFacade = require('./facade/checkout-facade.js');
+const restoreFacade = require('./facade/restore-facade.js');
+const resetFacade = require('./facade/reset-facade.js');
 const findFilePathFacade = require('./facade/find-file-path-facade.js');
 const findGraphFacade = require('./facade/find-graph-facade.js');
 const findDocumentFacade = require('./facade/find-document-facade.js');
@@ -39,7 +41,8 @@ function serveStatic(res, urlPath) {
       res.end('not found');
       return;
     }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+    // 빌드가 템플릿/정적 파일을 갱신하므로 캐시 금지 — 브라우저가 옛 JS/CSS를 붙들지 않게(개발 GUI).
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(data);
   });
 }
@@ -126,9 +129,21 @@ function startServer(port, heartbeatTimeoutMs) {
       return json(res, 200, saveFacade.save());
     }
 
-    // revert — 작업본을 generation 세대로 되돌림(저장 안 함, backup·히스토리 불변, ADR 0010).
-    if (method === 'POST' && url === '/revert') {
-      const result = revertFacade.revert(parsed.searchParams.get('generation'));
+    // checkout — 작업본+유저 DB를 generation 세대로 옮김(HEAD 이동, TIP·backup 불변, ADR 0010).
+    if (method === 'POST' && url === '/checkout') {
+      const result = checkoutFacade.checkout(parsed.searchParams.get('generation'));
+      return json(res, result.ok ? 200 : 422, result);
+    }
+
+    // restore(초기화) — 작업본+유저 DB를 backup(마지막 저장)으로 되돌림. 히스토리·backup 불변.
+    if (method === 'POST' && url === '/restore') {
+      const result = restoreFacade.restore();
+      return json(res, result.ok ? 200 : 422, result);
+    }
+
+    // reset(리셋) — 현재 HEAD 이후 세대 폐기(TIP=HEAD). 유저 DB·backup 불변.
+    if (method === 'POST' && url === '/reset') {
+      const result = resetFacade.reset();
       return json(res, result.ok ? 200 : 422, result);
     }
 
@@ -139,7 +154,7 @@ function startServer(port, heartbeatTimeoutMs) {
           res.end('gui.html 없음 — 빌드(build-ontology)로 템플릿을 렌더해야 합니다.');
           return;
         }
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
         res.end(data);
       });
       return;

@@ -53,22 +53,27 @@ class DiffView extends HTMLElement {
 
   renderDiff(d) {
     const g = d.graph;
-    const total = g.nodes.added.length + g.nodes.removed.length + g.nodes.changed.length + g.edges.added.length + g.edges.removed.length;
-    if (total === 0) return placeholder('두 스냅샷이 동일합니다.');
+    const f = d.files;
+    const graphTotal = g.nodes.added.length + g.nodes.removed.length + g.nodes.changed.length + g.edges.added.length + g.edges.removed.length;
+    const fileTotal = f.added.length + f.removed.length + f.modified.length;
+    // 본문만 바뀌면 그래프(id·type·label·관계)는 그대로다 — 파일 변경도 같이 봐야 "동일" 오판을 막는다.
+    if (graphTotal + fileTotal === 0) return placeholder('두 스냅샷이 동일합니다.');
 
     const nodeLine = (sign, cls, n) => `<div class="d-${cls}">${sign} ${badge(n.type ?? n.to?.type)}${esc(n.label ?? n.to?.label)}</div>`;
     const edgeLine = (sign, cls, e) => `<div class="d-${cls}">${sign} <span class="rel">${esc(e.rel)}</span> ${esc(e.from.slice(0, 8))}→${esc(e.to.slice(0, 8))}</div>`;
 
-    let html = '<h3>그래프</h3><div class="edge-list">';
-    g.nodes.added.forEach((n) => (html += nodeLine('+', 'add', n)));
-    g.nodes.removed.forEach((n) => (html += nodeLine('−', 'del', n)));
-    g.nodes.changed.forEach((n) => (html += nodeLine('~', 'mod', n)));
-    g.edges.added.forEach((e) => (html += edgeLine('+', 'add', e)));
-    g.edges.removed.forEach((e) => (html += edgeLine('−', 'del', e)));
-    html += '</div>';
+    let html = '';
+    if (graphTotal) {
+      html += '<h3>그래프</h3><div class="edge-list">';
+      g.nodes.added.forEach((n) => (html += nodeLine('+', 'add', n)));
+      g.nodes.removed.forEach((n) => (html += nodeLine('−', 'del', n)));
+      g.nodes.changed.forEach((n) => (html += nodeLine('~', 'mod', n)));
+      g.edges.added.forEach((e) => (html += edgeLine('+', 'add', e)));
+      g.edges.removed.forEach((e) => (html += edgeLine('−', 'del', e)));
+      html += '</div>';
+    }
 
-    const f = d.files;
-    if (f.added.length + f.removed.length + f.modified.length) {
+    if (fileTotal) {
       html += '<h3>파일</h3>';
       f.modified.forEach((file) => (html += this.fileBlock('~', 'mod', file)));
       f.added.forEach((file) => (html += this.fileBlock('+', 'add', file)));

@@ -8,10 +8,6 @@
       "type": "Instance",
       "label": "노드 type 예시"
     },
-    "ab621535-675d-711f-bc07-728bef356f4d": {
-      "type": "Class",
-      "label": "format"
-    },
     "019edfc9-9758-7398-8157-e1c9f43c4d0d": {
       "type": "Concept",
       "label": "산출물 온톨로지"

@@ -11,7 +11,8 @@ const zlib = require('node:zlib');
 const crypto = require('node:crypto');
 
 const OBJECTS = 'objects';
-const HEAD = 'HEAD';
+const HEAD = 'HEAD'; // 현재 커서(체크가 옮김)
+const TIP = 'TIP'; // 히스토리의 끝(최신 세대). 저장은 항상 여기에 붙는다.
 const FILE_MODE = '100644';
 const DIR_MODE = '40000';
 
@@ -94,17 +95,23 @@ function parseCommit(payload) {
   return { tree, parent, tsSec };
 }
 
-function readHead(historyDir) {
-  const file = path.join(historyDir, HEAD);
+// 단일 sha를 담는 ref 파일(HEAD·TIP) 읽기/쓰기.
+function readRef(historyDir, name) {
+  const file = path.join(historyDir, name);
   if (!fs.existsSync(file)) return null;
   const sha = fs.readFileSync(file, 'utf8').trim();
   return sha || null;
 }
 
-function writeHead(historyDir, sha) {
+function writeRef(historyDir, name, sha) {
   fs.mkdirSync(historyDir, { recursive: true });
-  fs.writeFileSync(path.join(historyDir, HEAD), sha + '\n');
+  fs.writeFileSync(path.join(historyDir, name), sha + '\n');
 }
+
+const readHead = (historyDir) => readRef(historyDir, HEAD);
+const writeHead = (historyDir, sha) => writeRef(historyDir, HEAD, sha);
+const readTip = (historyDir) => readRef(historyDir, TIP);
+const writeTip = (historyDir, sha) => writeRef(historyDir, TIP, sha);
 
 // 두 tree를 재귀 비교해 파일 경로별 변경을 낸다(blob 해시 기준).
 // 반환: { added:[path], removed:[path], modified:[path] }. 읽기 전용.
@@ -142,6 +149,8 @@ module.exports = {
   parseCommit,
   readHead,
   writeHead,
+  readTip,
+  writeTip,
   diffTrees,
   FILE_MODE,
   DIR_MODE,

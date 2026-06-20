@@ -6,10 +6,12 @@
 
 const buildFacade = require('./facade/build-facade.js');
 const saveFacade = require('./facade/save-facade.js');
-const revertFacade = require('./facade/revert-facade.js');
+const checkoutFacade = require('./facade/checkout-facade.js');
+const restoreFacade = require('./facade/restore-facade.js');
+const resetFacade = require('./facade/reset-facade.js');
 const diffFacade = require('./facade/diff-facade.js');
 
-const COMMANDS = ['build-ontology', 'save', 'revert', 'find', 'diff'];
+const COMMANDS = ['build-ontology', 'save', 'checkout', 'restore', 'reset', 'find', 'diff'];
 
 function runBuild() {
   const result = buildFacade.build();
@@ -30,14 +32,36 @@ function runSave() {
   process.exit(0);
 }
 
-// revert <세대> — 작업본을 그 세대로 되돌림(저장 안 함, backup·히스토리 불변).
-function runRevert(generation) {
-  const result = revertFacade.revert(generation);
+// checkout <세대> — 작업본+유저 DB를 그 세대 구조로 옮김(HEAD 이동, TIP·backup 불변).
+function runCheckout(generation) {
+  const result = checkoutFacade.checkout(generation);
   if (result.ok) {
-    console.log(`되돌림 — 작업본을 세대 ${result.generation.slice(0, 12)}로 (저장하려면 save)`);
+    console.log(`체크 — 작업본·유저 DB를 세대 ${result.generation.slice(0, 12)}로 (HEAD 이동, 끝 버리려면 reset)`);
     process.exit(0);
   }
-  console.error(`revert 실패 — ${result.error}`);
+  console.error(`checkout 실패 — ${result.error}`);
+  process.exit(1);
+}
+
+// restore — 작업본+유저 DB를 backup(마지막 저장)으로 되돌림. 히스토리·backup 불변.
+function runRestore() {
+  const result = restoreFacade.restore();
+  if (result.ok) {
+    console.log('초기화 — 작업본·유저 DB를 backup(마지막 저장)으로 되돌림');
+    process.exit(0);
+  }
+  console.error(`restore 실패 — ${result.error}`);
+  process.exit(1);
+}
+
+// reset — 현재 HEAD 이후 세대를 버림(TIP=HEAD). 유저 DB·backup 불변.
+function runReset() {
+  const result = resetFacade.reset();
+  if (result.ok) {
+    console.log(`리셋 — 끝을 세대 ${result.generation.slice(0, 12)}로 당김(이후 세대 폐기)`);
+    process.exit(0);
+  }
+  console.error(`reset 실패 — ${result.error}`);
   process.exit(1);
 }
 
@@ -70,7 +94,9 @@ function main() {
 
   if (command === 'build-ontology') return runBuild();
   if (command === 'save') return runSave();
-  if (command === 'revert') return runRevert(arg);
+  if (command === 'checkout') return runCheckout(arg);
+  if (command === 'restore') return runRestore();
+  if (command === 'reset') return runReset();
   if (command === 'diff') return runDiff(arg, arg2);
 
   // find는 해당 Facade 연결 예정.

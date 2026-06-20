@@ -7,6 +7,8 @@ export const api = {
   document: (id) => fetch('/find/document?id=' + encodeURIComponent(id)).then((r) => r.json()),
   diff: (from, to) =>
     fetch(`/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`).then((r) => r.json()),
+  checkout: (generation) =>
+    fetch(`/checkout?generation=${encodeURIComponent(generation)}`, { method: 'POST' }).then((r) => r.json()),
   command: (cmd) => fetch('/' + cmd, { method: 'POST' }).then((r) => r.json()),
   heartbeat: () => fetch('/heartbeat', { method: 'POST' }),
 };
